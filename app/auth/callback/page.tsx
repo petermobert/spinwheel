@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { Route } from "next";
 import { supabaseBrowser } from "@/lib/supabaseClient";
 
 export default function AuthCallbackPage() {
@@ -11,7 +12,8 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const run = async () => {
       const code = params.get("code");
-      const next = params.get("next") || "/";
+      const nextParam = params.get("next");
+      const next: Route = nextParam === "/admin/entries" ? "/admin/entries" : "/";
 
       if (!code) {
         router.replace(next);
