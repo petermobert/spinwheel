@@ -6,11 +6,15 @@ function isValidEmail(email: string) {
 }
 
 function isValidZip(zip: string) {
-  return /^\d{5}(?:-\d{4})?$/.test(zip.trim());
+  const digits = zip.replace(/\D/g, "");
+  return digits.length === 5 || digits.length === 9;
 }
 
 function isValidPhone(phone: string) {
-  return /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/.test(phone.replace(/\s+/g, ""));
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 10) return true;
+  if (digits.length === 11 && digits.startsWith("1")) return true;
+  return false;
 }
 
 export async function POST(request: Request) {
@@ -62,7 +66,11 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      return NextResponse.json({ error: "Failed to save submission" }, { status: 500 });
+      const detail =
+        process.env.NODE_ENV === "development"
+          ? `${error.message}${error.details ? ` | ${error.details}` : ""}`
+          : "Failed to save submission";
+      return NextResponse.json({ error: detail }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true, leadId: data }, { status: 200 });

@@ -286,8 +286,14 @@ for update
 using (auth.uid() = id)
 with check (auth.uid() = id);
 
-revoke execute on function public.create_public_lead(text, text, text, text, text, text, text, boolean, text) from anon, authenticated;
-revoke execute on function public.acquire_spin_lock(uuid, uuid, int) from anon, authenticated;
-revoke execute on function public.release_spin_lock(uuid) from anon, authenticated;
-revoke execute on function public.finalize_spin(uuid, boolean) from anon, authenticated;
-revoke execute on function public.is_admin(uuid) from anon, authenticated;
+revoke execute on function public.create_public_lead(text, text, text, text, text, text, text, boolean, text) from public, anon, authenticated;
+revoke execute on function public.acquire_spin_lock(uuid, uuid, int) from public, anon, authenticated;
+revoke execute on function public.release_spin_lock(uuid) from public, anon, authenticated;
+revoke execute on function public.finalize_spin(uuid, boolean) from public, anon, authenticated;
+revoke execute on function public.is_admin(uuid) from public, anon, authenticated;
+
+grant execute on function public.create_public_lead(text, text, text, text, text, text, text, boolean, text) to service_role;
+grant execute on function public.acquire_spin_lock(uuid, uuid, int) to service_role;
+grant execute on function public.release_spin_lock(uuid) to service_role;
+grant execute on function public.finalize_spin(uuid, boolean) to service_role;
+grant execute on function public.is_admin(uuid) to service_role;

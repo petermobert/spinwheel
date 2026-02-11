@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   let query = admin
     .from("leads")
     .select(
-      "id,first_name,last_name,street,city,zip_code,phone_number,email_address,follow_up_requested,created_at,source,status,wheel_entry_id,used,used_timestamp,winner,winner_timestamp,spin_id,wheel_entries(display_name)"
+      "id,first_name,last_name,street,city,zip_code,phone_number,email_address,follow_up_requested,created_at,source,status,wheel_entry_id,used,used_timestamp,winner,winner_timestamp,spin_id,wheel_entries!leads_wheel_entry_fk(display_name)"
     )
     .order("created_at", { ascending: false })
     .limit(1000);
@@ -45,7 +45,11 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: "Failed to fetch entries" }, { status: 500 });
+    const detail =
+      process.env.NODE_ENV === "development"
+        ? `${error.message}${error.details ? ` | ${error.details}` : ""}`
+        : "Failed to fetch entries";
+    return NextResponse.json({ error: detail }, { status: 500 });
   }
 
   return NextResponse.json({ rows: data || [] });
