@@ -1,0 +1,52 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createServiceClient, requireAdmin } from "@/lib/supabaseServer";
+import type { FilterMode } from "@/lib/types";
+
+function applyFilter(query: any, mode: FilterMode) {
+  switch (mode) {
+    case "ELIGIBLE":
+      return query.eq("used", false).eq("winner", false);
+    case "USED":
+      return query.eq("used", true);
+    case "WINNERS":
+      return query.eq("winner", true);
+    default:
+      return query;
+  }
+}
+
+export async function GET(request: NextRequest) {
+  const adminCheck = await requireAdmin(request);
+  if ("error" in adminCheck) {
+    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+  }
+
+  const filterMode = (request.nextUrl.searchParams.get("filterMode") || "ALL") as FilterMode;
+  const search = (request.nextUrl.searchParams.get("search") || "").trim();
+
+  const admin = createServiceClient();
+
+  let query = admin
+    .from("leads")
+    .select(
+      "id,first_name,last_name,street,city,zip_code,phone_number,email_address,follow_up_requested,created_at,source,status,wheel_entry_id,used,used_timestamp,winner,winner_timestamp,spin_id,wheel_entries(display_name)"
+    )
+    .order("created_at", { ascending: false })
+    .limit(1000);
+
+  query = applyFilter(query, filterMode as FilterMode);
+
+  if (search) {
+    query = query.or(
+      `first_name.ilike.%${search}%,last_name.ilike.%${search}%,email_address.ilike.%${search}%,phone_number.ilike.%${search}%,zip_code.ilike.%${search}%,city.ilike.%${search}%`
+    );
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    return NextResponse.json({ error: "Failed to fetch entries" }, { status: 500 });
+  }
+
+  return NextResponse.json({ rows: data || [] });
+}

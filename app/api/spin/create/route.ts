@@ -1,0 +1,80 @@
+import crypto from "node:crypto";
+import { NextRequest, NextResponse } from "next/server";
+import { createServiceClient, requireAdmin } from "@/lib/supabaseServer";
+
+export async function POST(request: NextRequest) {
+  const adminCheck = await requireAdmin(request);
+
+  if ("error" in adminCheck) {
+    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+  }
+
+  const admin = createServiceClient();
+  const spinId = crypto.randomUUID();
+
+  const { data: lockOk, error: lockError } = await admin.rpc("acquire_spin_lock", {
+    p_held_by: adminCheck.userId,
+    p_spin_id: spinId,
+    p_ttl_seconds: 120
+  });
+
+  if (lockError) {
+    return NextResponse.json({ error: "Failed to acquire spin lock" }, { status: 500 });
+  }
+
+  if (!lockOk) {
+    return NextResponse.json(
+      { error: "Another spin is currently in progress. Please wait for lock expiry or completion." },
+      { status: 409 }
+    );
+  }
+
+  const { data: eligibleRows, error: eligibleError } = await admin
+    .from("leads")
+    .select("id, wheel_entry_id, wheel_entries!leads_wheel_entry_fk(display_name)")
+    .not("wheel_entry_id", "is", null)
+    .eq("used", false)
+    .eq("winner", false)
+    .order("created_at", { ascending: true });
+
+  if (eligibleError) {
+    await admin.rpc("release_spin_lock", { p_spin_id: spinId });
+    return NextResponse.json({ error: "Failed to fetch eligible entries" }, { status: 500 });
+  }
+
+  const entriesSnapshot = (eligibleRows || []).map((r) => ({
+    wheel_entry_id: r.wheel_entry_id as string,
+    display_name: (r as any).wheel_entries?.display_name || "Entry",
+    lead_id: r.id
+  }));
+
+  if (entriesSnapshot.length === 0) {
+    await admin.rpc("release_spin_lock", { p_spin_id: spinId });
+    return NextResponse.json({ error: "No eligible entries to spin" }, { status: 400 });
+  }
+
+  const winnerIndex = crypto.randomInt(0, entriesSnapshot.length);
+  const winner = entriesSnapshot[winnerIndex];
+
+  const { error: spinInsertError } = await admin.from("spins").insert({
+    id: spinId,
+    status: "pending",
+    created_by: adminCheck.userId,
+    entries_snapshot: entriesSnapshot,
+    winner_wheel_entry_id: winner.wheel_entry_id,
+    winner_display_name: winner.display_name
+  });
+
+  if (spinInsertError) {
+    await admin.rpc("release_spin_lock", { p_spin_id: spinId });
+    return NextResponse.json({ error: "Failed to create spin" }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    spinId,
+    winnerWheelEntryId: winner.wheel_entry_id,
+    winnerDisplayName: winner.display_name,
+    winnerIndex,
+    entriesSnapshot
+  });
+}
