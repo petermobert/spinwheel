@@ -8,6 +8,19 @@ import { supabaseBrowser } from "@/lib/supabaseClient";
 import type { SpinCreateResponse, WheelSnapshotEntry } from "@/lib/types";
 
 type MeResponse = { isAdmin: boolean; userId: string };
+type WinnerRow = { id: string; winner_display_name: string; finalized_at: string | null };
+
+function formatFinalizedAt(value: string | null) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  const weekday = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(date);
+  const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: true })
+    .format(date)
+    .replace(" ", "")
+    .toLowerCase();
+  return `${weekday} at ${time}`;
+}
 
 export default function AdminWheelPage() {
   const [token, setToken] = useState("");
@@ -16,6 +29,7 @@ export default function AdminWheelPage() {
   const [entries, setEntries] = useState<WheelSnapshotEntry[]>([]);
   const [lockHeld, setLockHeld] = useState(false);
   const [activeSpin, setActiveSpin] = useState<SpinCreateResponse | null>(null);
+  const [winners, setWinners] = useState<WinnerRow[]>([]);
   const [spinning, setSpinning] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -64,6 +78,22 @@ export default function AdminWheelPage() {
     setLockHeld(Boolean(payload.lockHeld));
   }, [token]);
 
+  const fetchWinners = useCallback(async () => {
+    if (!token) return;
+
+    const res = await fetch("/api/wheel/winners", {
+      headers: { authorization: `Bearer ${token}` }
+    });
+
+    const payload = await res.json();
+    if (!res.ok) {
+      setError(payload.error || "Failed to load winners");
+      return;
+    }
+
+    setWinners(payload.winners || []);
+  }, [token]);
+
   useEffect(() => {
     refreshSessionAndAdmin();
 
@@ -78,14 +108,16 @@ export default function AdminWheelPage() {
     if (!isAdmin || !token) return;
 
     fetchEligible();
+    fetchWinners();
     const interval = setInterval(() => {
       if (!spinning && !modalOpen) {
         fetchEligible();
+        fetchWinners();
       }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [fetchEligible, isAdmin, modalOpen, spinning, token]);
+  }, [fetchEligible, fetchWinners, isAdmin, modalOpen, spinning, token]);
 
   const login = async () => {
     setError("");
@@ -95,13 +127,6 @@ export default function AdminWheelPage() {
         redirectTo: `${window.location.origin}/auth/callback?next=/`
       }
     });
-  };
-
-  const logout = async () => {
-    await supabaseBrowser.auth.signOut();
-    setToken("");
-    setIsAdmin(false);
-    setEntries([]);
   };
 
   const spinDisabled = useMemo(() => {
@@ -167,6 +192,7 @@ export default function AdminWheelPage() {
     setModalOpen(false);
     setActiveSpin(null);
     await fetchEligible();
+    await fetchWinners();
   };
 
   const cancelSpin = async () => {
@@ -195,6 +221,7 @@ export default function AdminWheelPage() {
     setActiveSpin(null);
     setSpinning(false);
     await fetchEligible();
+    await fetchWinners();
   };
 
   if (loading) {
@@ -217,41 +244,29 @@ export default function AdminWheelPage() {
   const wheelEntries = activeSpin?.entriesSnapshot ?? entries;
 
   return (
-    <div className="row" style={{ alignItems: "flex-start", gap: 1 }}>
-
-
-      <div className="card" style={{ padding: 10, minHeight: "calc(100vh - 84px)", flex: 1 }}>
-              <div style={{ width: 240, paddingTop: 1, flexShrink: 0 }}>
-        <Image src="/SparkleSquadHoriz.png" alt="Sparkle Squad" width={240} height={150} priority />
-      </div>
-        {/* <div className="row" style={{ justifyContent: "space-between", marginBottom: 12 }}>
-          <div>
-            <h1 style={{ margin: 0 }}>Sparkle Squad Prize Wheel</h1>
-            <p style={{ marginTop: 6, marginBottom: 0, color: "#6c6c6c" }}>
-              Entries: {entries.length}
-            </p>
-          </div>
-          <div className="row">
-            <button className="secondary" onClick={fetchEligible} disabled={busy || spinning}>
-              Refresh
-            </button>
-          </div>
-        </div> */}
+    <div className="row" style={{ alignItems: "flex-start", gap: 12, flexWrap: "nowrap" }}>
+      <div className="card" style={{ padding: 10, minHeight: "calc(100vh - 84px)", flex: 1, minWidth: 0, overflow: "hidden" }}>
+        <div style={{ width: 240, paddingTop: 1, flexShrink: 0 }}>
+          <Image src="/SparkleSquadHoriz.png" alt="Sparkle Squad" width={240} height={150} priority />
+        </div>
 
         {error && <p className="error">{error}</p>}
 
-        <Wheel entries={wheelEntries} spinPayload={activeSpin} onSpinAnimationDone={onAnimationDone} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Wheel entries={wheelEntries} spinPayload={activeSpin} onSpinAnimationDone={onAnimationDone} />
+        </div>
 
         <div className="row" style={{ justifyContent: "center", marginTop: 8 }}>
           <button className="primary" onClick={startSpin} disabled={spinDisabled}>
             {spinning ? "Spinning..." : "Start Spin"}
           </button>
-              <p style={{ marginTop: 6, marginBottom: 0, color: "#6c6c6c" }}>
-              Entries: {entries.length}
-            </p>
-                   <div className="row">
+          <p style={{ marginTop: 6, marginBottom: 0, color: "#6c6c6c" }}>Entries: {entries.length}</p>
+          <div className="row">
             <button className="secondary" onClick={fetchEligible} disabled={busy || spinning}>
-              Refresh
+              Refresh Entries
+            </button>
+            <button className="secondary" onClick={fetchWinners} disabled={busy || spinning}>
+              Refresh Winners
             </button>
           </div>
         </div>
@@ -263,6 +278,34 @@ export default function AdminWheelPage() {
           onCancel={cancelSpin}
           busy={busy}
         />
+      </div>
+
+      <div className="card" style={{ width: 420, maxHeight: "82vh", overflowY: "auto", padding: 12, flexShrink: 0 }}>
+        <h3 style={{ marginTop: 0, marginBottom: 8 }}>Previous Winners</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Winner</th>
+              <th>Finalized</th>
+            </tr>
+          </thead>
+          <tbody>
+            {winners.length === 0 ? (
+              <tr>
+                <td style={{ color: "#6c6c6c" }} colSpan={2}>
+                  No winners yet
+                </td>
+              </tr>
+            ) : (
+              winners.map((winner) => (
+                <tr key={winner.id}>
+                  <td>{winner.winner_display_name}</td>
+                  <td>{formatFinalizedAt(winner.finalized_at)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

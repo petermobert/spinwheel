@@ -1,6 +1,6 @@
 :root {
   --bg: #58B6E7;
-  --panel: #fffdf6;
+  --panel: #ffffff;
   --text: #2a2a2a;
   --muted: #6c6c6c;
   --accent: #1d6a96;
@@ -29,7 +29,7 @@ a {
 }
 
 .container {
-  width: min(1600px, 96vw);
+  width: min(1920px, 99vw);
   margin: 0 auto;
   padding: 1px 0 1px;
 }

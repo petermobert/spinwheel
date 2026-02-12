@@ -161,7 +161,7 @@ export default function Wheel({ entries, spinPayload, onSpinAnimationDone }: Pro
         ref={canvasRef}
         width={1400}
         height={1400}
-        style={{ width: "min(98vw, calc(100vh - 180px), 1500px)", height: "auto" }}
+        style={{ width: "min(100%, calc(100vh - 220px), 1350px)", maxWidth: "100%", height: "auto" }}
       />
     </div>
   );
