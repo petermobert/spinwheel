@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Wheel from "@/components/Wheel";
 import WinnerModal from "@/components/WinnerModal";
 import { supabaseBrowser } from "@/lib/supabaseClient";
@@ -202,6 +203,7 @@ export default function AdminWheelPage() {
 
   if (!isAdmin) {
     return (
+      
       <div className="card" style={{ maxWidth: 640, margin: "0 auto" }}>
         <h1 style={{ marginTop: 0 }}>Admin Prize Wheel</h1>
         <p style={{ color: "#6c6c6c" }}>Google login + admin role required.</p>
@@ -215,41 +217,53 @@ export default function AdminWheelPage() {
   const wheelEntries = activeSpin?.entriesSnapshot ?? entries;
 
   return (
-    <div className="card">
-      <div className="row" style={{ justifyContent: "space-between", marginBottom: 12 }}>
-        <div>
-          <h1 style={{ margin: 0 }}>Admin Prize Wheel</h1>
-          <p style={{ marginTop: 6, marginBottom: 0, color: "#6c6c6c" }}>
-            Eligible entries: {entries.length} {lockHeld ? "| spin lock held" : "| spin lock free"}
-          </p>
-        </div>
-        <div className="row">
-          <button className="secondary" onClick={fetchEligible} disabled={busy || spinning}>
-            Refresh
-          </button>
-          <button className="secondary" onClick={logout}>
-            Sign out
-          </button>
-        </div>
+    <div className="row" style={{ alignItems: "flex-start", gap: 1 }}>
+
+
+      <div className="card" style={{ padding: 10, minHeight: "calc(100vh - 84px)", flex: 1 }}>
+              <div style={{ width: 240, paddingTop: 1, flexShrink: 0 }}>
+        <Image src="/SparkleSquadHoriz.png" alt="Sparkle Squad" width={240} height={150} priority />
       </div>
+        {/* <div className="row" style={{ justifyContent: "space-between", marginBottom: 12 }}>
+          <div>
+            <h1 style={{ margin: 0 }}>Sparkle Squad Prize Wheel</h1>
+            <p style={{ marginTop: 6, marginBottom: 0, color: "#6c6c6c" }}>
+              Entries: {entries.length}
+            </p>
+          </div>
+          <div className="row">
+            <button className="secondary" onClick={fetchEligible} disabled={busy || spinning}>
+              Refresh
+            </button>
+          </div>
+        </div> */}
 
-      {error && <p className="error">{error}</p>}
+        {error && <p className="error">{error}</p>}
 
-      <Wheel entries={wheelEntries} spinPayload={activeSpin} onSpinAnimationDone={onAnimationDone} />
+        <Wheel entries={wheelEntries} spinPayload={activeSpin} onSpinAnimationDone={onAnimationDone} />
 
-      <div className="row" style={{ justifyContent: "center", marginTop: 14 }}>
-        <button className="primary" onClick={startSpin} disabled={spinDisabled}>
-          {spinning ? "Spinning..." : "Start Spin"}
-        </button>
+        <div className="row" style={{ justifyContent: "center", marginTop: 8 }}>
+          <button className="primary" onClick={startSpin} disabled={spinDisabled}>
+            {spinning ? "Spinning..." : "Start Spin"}
+          </button>
+              <p style={{ marginTop: 6, marginBottom: 0, color: "#6c6c6c" }}>
+              Entries: {entries.length}
+            </p>
+                   <div className="row">
+            <button className="secondary" onClick={fetchEligible} disabled={busy || spinning}>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <WinnerModal
+          open={modalOpen}
+          winnerName={activeSpin?.winnerDisplayName || ""}
+          onConfirm={finalize}
+          onCancel={cancelSpin}
+          busy={busy}
+        />
       </div>
-
-      <WinnerModal
-        open={modalOpen}
-        winnerName={activeSpin?.winnerDisplayName || ""}
-        onConfirm={finalize}
-        onCancel={cancelSpin}
-        busy={busy}
-      />
     </div>
   );
 }

@@ -25,6 +25,12 @@ function hashToRange(input: string, min: number, max: number) {
   return min + normalized * (max - min);
 }
 
+function getLabelFontSize(radius: number, segmentAngle: number) {
+  // Approximate available text width on a slice at ~80% of the radius.
+  const arcLength = radius * 0.8 * segmentAngle;
+  return Math.max(14, Math.min(44, Math.floor(arcLength * 0.23)));
+}
+
 export default function Wheel({ entries, spinPayload, onSpinAnimationDone }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [rotation, setRotation] = useState(0);
@@ -61,6 +67,7 @@ export default function Wheel({ entries, spinPayload, onSpinAnimationDone }: Pro
     }
 
     const segment = (Math.PI * 2) / activeEntries.length;
+    const fontSize = getLabelFontSize(radius, segment);
 
     activeEntries.forEach((entry, i) => {
       const start = i * segment;
@@ -77,8 +84,9 @@ export default function Wheel({ entries, spinPayload, onSpinAnimationDone }: Pro
       ctx.save();
       ctx.rotate(mid);
       ctx.fillStyle = "#1e1e1e";
-      ctx.font = "bold 14px Avenir Next";
+      ctx.font = `700 ${fontSize}px Avenir Next`;
       ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
       ctx.fillText(entry.display_name, radius - 12, 5);
       ctx.restore();
     });
@@ -142,14 +150,19 @@ export default function Wheel({ entries, spinPayload, onSpinAnimationDone }: Pro
         style={{
           width: 0,
           height: 0,
-          borderLeft: "14px solid transparent",
-          borderRight: "14px solid transparent",
-          borderTop: "24px solid #bc4749",
-          marginBottom: -6,
+          borderLeft: "20px solid transparent",
+          borderRight: "20px solid transparent",
+          borderTop: "34px solid #bc4749",
+          marginBottom: -8,
           zIndex: 2
         }}
       />
-      <canvas ref={canvasRef} width={560} height={560} style={{ maxWidth: "94vw", height: "auto" }} />
+      <canvas
+        ref={canvasRef}
+        width={1400}
+        height={1400}
+        style={{ width: "min(98vw, calc(100vh - 180px), 1500px)", height: "auto" }}
+      />
     </div>
   );
 }

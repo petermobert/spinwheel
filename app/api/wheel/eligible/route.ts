@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, requireAdmin } from "@/lib/supabaseServer";
 
+function withCity(baseName: string, city: string | null) {
+  const cleanCity = (city || "").trim();
+  return cleanCity ? `${baseName} (${cleanCity})` : baseName;
+}
+
 export async function GET(request: NextRequest) {
   const adminCheck = await requireAdmin(request);
   if ("error" in adminCheck) {
@@ -11,7 +16,7 @@ export async function GET(request: NextRequest) {
 
   const { data: rows, error } = await admin
     .from("leads")
-    .select("id, wheel_entry_id, wheel_entries!leads_wheel_entry_fk(display_name)")
+    .select("id, city, wheel_entry_id, wheel_entries!leads_wheel_entry_fk(display_name)")
     .eq("used", false)
     .eq("winner", false)
     .not("wheel_entry_id", "is", null)
@@ -26,7 +31,7 @@ export async function GET(request: NextRequest) {
 
   const entries = (rows || []).map((r: any) => ({
     wheel_entry_id: r.wheel_entry_id as string,
-    display_name: r.wheel_entries?.display_name || "Entry",
+    display_name: withCity(r.wheel_entries?.display_name || "Entry", r.city || null),
     lead_id: r.id as string
   }));
 

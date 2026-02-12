@@ -17,6 +17,36 @@ function isValidPhone(phone: string) {
   return false;
 }
 
+async function lookupCityByZip(zip: string): Promise<string | null> {
+  const zipDigits = zip.replace(/\D/g, "");
+  const fiveDigitZip = zipDigits.slice(0, 5);
+  if (fiveDigitZip.length !== 5) return null;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+
+    const res = await fetch(`https://api.zippopotam.us/us/${fiveDigitZip}`, {
+      method: "GET",
+      cache: "no-store",
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const placeName = data?.places?.[0]?.["place name"];
+    if (typeof placeName === "string" && placeName.trim()) {
+      return placeName.trim();
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -24,7 +54,7 @@ export async function POST(request: Request) {
     const firstName = String(body.firstName || "").trim();
     const lastName = String(body.lastName || "").trim();
     const street = String(body.street || "").trim() || null;
-    const city = String(body.city || "").trim() || null;
+    const inputCity = String(body.city || "").trim();
     const zipCode = String(body.zipCode || "").trim();
     const phoneNumber = String(body.phoneNumber || "").trim();
     const emailAddress = String(body.emailAddress || "").trim().toLowerCase();
@@ -48,6 +78,11 @@ export async function POST(request: Request) {
 
     if (!isValidEmail(emailAddress)) {
       return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+    }
+
+    let city: string | null = inputCity || null;
+    if (!city) {
+      city = await lookupCityByZip(zipCode);
     }
 
     const admin = createServiceClient();

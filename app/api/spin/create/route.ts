@@ -2,6 +2,11 @@ import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, requireAdmin } from "@/lib/supabaseServer";
 
+function withCity(baseName: string, city: string | null) {
+  const cleanCity = (city || "").trim();
+  return cleanCity ? `${baseName} (${cleanCity})` : baseName;
+}
+
 export async function POST(request: NextRequest) {
   const adminCheck = await requireAdmin(request);
 
@@ -31,7 +36,7 @@ export async function POST(request: NextRequest) {
 
   const { data: eligibleRows, error: eligibleError } = await admin
     .from("leads")
-    .select("id, wheel_entry_id, wheel_entries!leads_wheel_entry_fk(display_name)")
+    .select("id, city, wheel_entry_id, wheel_entries!leads_wheel_entry_fk(display_name)")
     .not("wheel_entry_id", "is", null)
     .eq("used", false)
     .eq("winner", false)
@@ -44,7 +49,7 @@ export async function POST(request: NextRequest) {
 
   const entriesSnapshot = (eligibleRows || []).map((r) => ({
     wheel_entry_id: r.wheel_entry_id as string,
-    display_name: (r as any).wheel_entries?.display_name || "Entry",
+    display_name: withCity((r as any).wheel_entries?.display_name || "Entry", (r as any).city || null),
     lead_id: r.id
   }));
 

@@ -12,7 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <div className="container">
-          <nav className="row" style={{ justifyContent: "space-between", marginBottom: 16 }}>
+          {/* <nav className="row" style={{ justifyContent: "space-between", marginBottom: 16 }}>
             <div className="row">
               <Link href="/" style={{ fontWeight: 800, textDecoration: "none" }}>
                 Sparkle Squad Giveaway
@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/form">Public Form</Link>
               <Link href="/admin/entries">Admin Entries</Link>
             </div>
-          </nav>
+          </nav> */}
           {children}
         </div>
       </body>
