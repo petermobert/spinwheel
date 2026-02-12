@@ -29,7 +29,7 @@ a {
 }
 
 .container {
-  width: min(1920px, 99vw);
+  width: min(3840px, 99vw);
   margin: 0 auto;
   padding: 1px 0 1px;
 }

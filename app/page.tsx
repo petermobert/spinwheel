@@ -230,7 +230,7 @@ export default function AdminWheelPage() {
 
   if (!isAdmin) {
     return (
-      
+
       <div className="card" style={{ maxWidth: 640, margin: "0 auto" }}>
         <h1 style={{ marginTop: 0 }}>Admin Prize Wheel</h1>
         <p style={{ color: "#6c6c6c" }}>Google login + admin role required.</p>
@@ -244,7 +244,32 @@ export default function AdminWheelPage() {
   const wheelEntries = activeSpin?.entriesSnapshot ?? entries;
 
   return (
-    <div className="row" style={{ alignItems: "flex-start", gap: 12, flexWrap: "nowrap" }}>
+    <>
+      <div className="row" style={{ alignItems: "flex-start", gap: 12, flexWrap: "nowrap" }}>
+      <div className="card" style={{ width: 420, maxHeight: "82vh", overflowY: "auto", padding: 12, flexShrink: 0 }}>
+        <h3 style={{ marginTop: 0, marginBottom: 8 }}>Current Entries: {entries.length}</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Name (City)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {wheelEntries.length === 0 ? (
+              <tr>
+                <td style={{ color: "#6c6c6c" }}>No current entries</td>
+              </tr>
+            ) : (
+              wheelEntries.map((entry) => (
+                <tr key={entry.wheel_entry_id}>
+                  <td>{entry.display_name}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
       <div className="card" style={{ padding: 10, minHeight: "calc(100vh - 84px)", flex: 1, minWidth: 0, overflow: "hidden" }}>
         <div style={{ width: 240, paddingTop: 1, flexShrink: 0 }}>
           <Image src="/SparkleSquadHoriz.png" alt="Sparkle Squad" width={240} height={150} priority />
@@ -286,7 +311,7 @@ export default function AdminWheelPage() {
           <thead>
             <tr>
               <th>Winner</th>
-              <th>Finalized</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -307,6 +332,18 @@ export default function AdminWheelPage() {
           </tbody>
         </table>
       </div>
-    </div>
+      </div>
+      <div
+        style={{
+          position: "fixed",
+          right: 16,
+          bottom: 16,
+          zIndex: 20,
+          pointerEvents: "none"
+        }}
+      >
+        <Image src="/ScanMe.png" alt="Scan Me" width={160} height={160} priority />
+      </div>
+    </>
   );
 }
