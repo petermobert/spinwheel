@@ -342,7 +342,7 @@ export default function AdminWheelPage() {
           pointerEvents: "none"
         }}
       >
-        <Image src="/ScanMe.png" alt="Scan Me" width={160} height={160} priority />
+        <Image src="/ScanMe.png" alt="Scan Me" width={415} height={485} priority />
       </div>
     </>
   );
