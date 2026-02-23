@@ -7,6 +7,13 @@ function withCity(baseName: string, city: string | null) {
   return cleanCity ? `${baseName} (${cleanCity})` : baseName;
 }
 
+type EligibleRow = {
+  id: string;
+  city: string | null;
+  wheel_entry_id: string | null;
+  wheel_entries: { display_name: string } | null;
+};
+
 export async function GET(request: NextRequest) {
   const wheelSlug = (request.nextUrl.searchParams.get("wheel") || "").trim();
   const wheelLookup = await fetchWheelBySlug(wheelSlug);
@@ -37,10 +44,10 @@ export async function GET(request: NextRequest) {
     .maybeSingle();
   const lockHeld = !!lockRow && new Date(lockRow.expires_at).getTime() > Date.now();
 
-  const entries = (rows || []).map((r: any) => ({
+  const entries = ((rows || []) as EligibleRow[]).map((r) => ({
     wheel_entry_id: r.wheel_entry_id as string,
     display_name: withCity(r.wheel_entries?.display_name || "Entry", r.city || null),
-    lead_id: r.id as string
+    lead_id: r.id
   }));
 
   return NextResponse.json({ entries, lockHeld });

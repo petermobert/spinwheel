@@ -1,17 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import QRCode from "qrcode";
 
-export default function QrCodeBadge() {
+type Props = {
+  targetUrl: string;
+};
+
+export default function QrCodeBadge({ targetUrl }: Props) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [href, setHref] = useState<string>("");
 
   useEffect(() => {
-    const url = window.location.href;
-    setHref(url);
+    if (!targetUrl) return;
+    setHref(targetUrl);
 
-    QRCode.toDataURL(url, {
+    QRCode.toDataURL(targetUrl, {
       width: 320,
       margin: 2,
       color: {
@@ -21,7 +26,7 @@ export default function QrCodeBadge() {
     })
       .then(setDataUrl)
       .catch(() => setDataUrl(null));
-  }, []);
+  }, [targetUrl]);
 
   return (
     <div
@@ -40,7 +45,7 @@ export default function QrCodeBadge() {
       }}
     >
       {dataUrl ? (
-        <img src={dataUrl} alt="QR code for this page" style={{ width: 180, height: 180 }} />
+        <Image src={dataUrl} alt="QR code for this page" width={180} height={180} unoptimized />
       ) : (
         <div style={{ width: 180, height: 180, background: "#f1f1f1" }} />
       )}

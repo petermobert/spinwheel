@@ -3,8 +3,9 @@ import ExcelJS from "exceljs";
 import { createServiceClient, requireAdmin } from "@/lib/supabaseServer";
 import { fetchWheelBySlug } from "@/lib/wheelsServer";
 import type { FilterMode, LeadRow } from "@/lib/types";
+import type { PostgrestFilterBuilder } from "@supabase/postgrest-js";
 
-function applyFilter(query: any, mode: FilterMode) {
+function applyFilter(query: PostgrestFilterBuilder<unknown, unknown, unknown>, mode: FilterMode) {
   switch (mode) {
     case "ELIGIBLE":
       return query.eq("used", false).eq("winner", false);

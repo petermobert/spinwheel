@@ -36,6 +36,7 @@ export default function AdminWheelPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [wheelMeta, setWheelMeta] = useState<WheelRow | null>(null);
+  const [formUrl, setFormUrl] = useState("");
 
   const fetchWheel = useCallback(async () => {
     if (!wheelSlug) return;
@@ -84,6 +85,11 @@ export default function AdminWheelPage() {
   useEffect(() => {
     fetchWheel();
   }, [fetchWheel]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !wheelSlug) return;
+    setFormUrl(`${window.location.origin}/form/${wheelSlug}`);
+  }, [wheelSlug]);
 
   useEffect(() => {
     if (!wheelSlug) return;
@@ -301,7 +307,7 @@ export default function AdminWheelPage() {
           </table>
         </div>
       </div>
-      <QrCodeBadge />
+      {formUrl ? <QrCodeBadge targetUrl={formUrl} /> : null}
     </>
   );
 }
