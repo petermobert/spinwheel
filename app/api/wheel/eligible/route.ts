@@ -11,7 +11,7 @@ type EligibleRow = {
   id: string;
   city: string | null;
   wheel_entry_id: string | null;
-  wheel_entries: { display_name: string } | null;
+  wheel_entries: { display_name: string }[] | null;
 };
 
 export async function GET(request: NextRequest) {
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 
   const entries = ((rows || []) as EligibleRow[]).map((r) => ({
     wheel_entry_id: r.wheel_entry_id as string,
-    display_name: withCity(r.wheel_entries?.display_name || "Entry", r.city || null),
+    display_name: withCity(r.wheel_entries?.[0]?.display_name || "Entry", r.city || null),
     lead_id: r.id
   }));
 

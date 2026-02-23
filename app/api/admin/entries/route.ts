@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, requireAdmin } from "@/lib/supabaseServer";
 import { fetchWheelBySlug } from "@/lib/wheelsServer";
 import type { FilterMode } from "@/lib/types";
-import type { PostgrestFilterBuilder } from "@supabase/postgrest-js";
+type FilterableQuery<T> = {
+  eq: (column: string, value: boolean) => T;
+};
 
-function applyFilter(query: PostgrestFilterBuilder<unknown, unknown, unknown>, mode: FilterMode) {
+function applyFilter<T extends FilterableQuery<T>>(query: T, mode: FilterMode) {
   switch (mode) {
     case "ELIGIBLE":
       return query.eq("used", false).eq("winner", false);
