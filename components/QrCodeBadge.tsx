@@ -45,16 +45,12 @@ export default function QrCodeBadge({ targetUrl }: Props) {
       }}
     >
       {dataUrl ? (
-        <Image src={dataUrl} alt="QR code for this page" width={180} height={180} unoptimized />
+        <Image src={dataUrl} alt="QR code for this page" width={280} height={280} unoptimized />
       ) : (
-        <div style={{ width: 180, height: 180, background: "#f1f1f1" }} />
+        <div style={{ width: 280, height: 280, background: "#f1f1f1" }} />
       )}
-      <div style={{ fontSize: 12, color: "#4b4b4b" }}>Scan to open this page</div>
-      {href ? (
-        <div style={{ fontSize: 10, color: "#7a7a7a", maxWidth: 200, textAlign: "center", wordBreak: "break-all" }}>
-          {href}
-        </div>
-      ) : null}
+      <div style={{ fontSize: 12, color: "#4b4b4b" }}>Scan Me To Enter</div>
+    
     </div>
   );
 }
