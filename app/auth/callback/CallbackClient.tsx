@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { Route } from "next";
 import { supabaseBrowser } from "@/lib/supabaseClient";
 
 export default function CallbackClient() {
@@ -13,7 +12,7 @@ export default function CallbackClient() {
     const run = async () => {
       const code = params.get("code");
       const nextParam = params.get("next");
-      const next: Route = nextParam === "/admin/entries" ? "/admin/entries" : "/";
+      const next = nextParam && nextParam.startsWith("/") ? nextParam : "/admin/wheels";
 
       if (!code) {
         router.replace(next);

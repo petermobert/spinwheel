@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabaseServer";
+import { fetchWheelBySlug } from "@/lib/wheelsServer";
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -47,8 +48,17 @@ async function lookupCityByZip(zip: string): Promise<string | null> {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const wheelSlug = (request.nextUrl.searchParams.get("wheel") || "").trim();
+    const wheelLookup = await fetchWheelBySlug(wheelSlug);
+    if ("error" in wheelLookup) {
+      return NextResponse.json({ error: wheelLookup.error }, { status: wheelLookup.status });
+    }
+    if (!wheelLookup.wheel.is_active) {
+      return NextResponse.json({ error: "Wheel is not active" }, { status: 404 });
+    }
+
     const body = await request.json();
 
     const firstName = String(body.firstName || "").trim();
@@ -89,6 +99,7 @@ export async function POST(request: Request) {
     const displayName = `${firstName} ${lastName.charAt(0)}.`;
 
     const { data, error } = await admin.rpc("create_public_lead", {
+      p_wheel_id: wheelLookup.wheel.id,
       p_first_name: firstName,
       p_last_name: lastName,
       p_street: street,

@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient, requireAdmin } from "@/lib/supabaseServer";
+import { createServiceClient } from "@/lib/supabaseServer";
+import { fetchWheelBySlug } from "@/lib/wheelsServer";
 
 function withCity(baseName: string, city: string | null) {
   const cleanCity = (city || "").trim();
@@ -8,17 +9,18 @@ function withCity(baseName: string, city: string | null) {
 }
 
 export async function POST(request: NextRequest) {
-  const adminCheck = await requireAdmin(request);
-
-  if ("error" in adminCheck) {
-    return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
+  const wheelSlug = (request.nextUrl.searchParams.get("wheel") || "").trim();
+  const wheelLookup = await fetchWheelBySlug(wheelSlug);
+  if ("error" in wheelLookup) {
+    return NextResponse.json({ error: wheelLookup.error }, { status: wheelLookup.status });
   }
 
   const admin = createServiceClient();
   const spinId = crypto.randomUUID();
 
   const { data: lockOk, error: lockError } = await admin.rpc("acquire_spin_lock", {
-    p_held_by: adminCheck.userId,
+    p_wheel_id: wheelLookup.wheel.id,
+    p_held_by: null,
     p_spin_id: spinId,
     p_ttl_seconds: 120
   });
@@ -37,13 +39,14 @@ export async function POST(request: NextRequest) {
   const { data: eligibleRows, error: eligibleError } = await admin
     .from("leads")
     .select("id, city, wheel_entry_id, wheel_entries!leads_wheel_entry_fk(display_name)")
+    .eq("wheel_id", wheelLookup.wheel.id)
     .not("wheel_entry_id", "is", null)
     .eq("used", false)
     .eq("winner", false)
     .order("created_at", { ascending: true });
 
   if (eligibleError) {
-    await admin.rpc("release_spin_lock", { p_spin_id: spinId });
+    await admin.rpc("release_spin_lock", { p_wheel_id: wheelLookup.wheel.id, p_spin_id: spinId });
     return NextResponse.json({ error: "Failed to fetch eligible entries" }, { status: 500 });
   }
 
@@ -54,7 +57,7 @@ export async function POST(request: NextRequest) {
   }));
 
   if (entriesSnapshot.length === 0) {
-    await admin.rpc("release_spin_lock", { p_spin_id: spinId });
+    await admin.rpc("release_spin_lock", { p_wheel_id: wheelLookup.wheel.id, p_spin_id: spinId });
     return NextResponse.json({ error: "No eligible entries to spin" }, { status: 400 });
   }
 
@@ -63,15 +66,15 @@ export async function POST(request: NextRequest) {
 
   const { error: spinInsertError } = await admin.from("spins").insert({
     id: spinId,
+    wheel_id: wheelLookup.wheel.id,
     status: "pending",
-    created_by: adminCheck.userId,
     entries_snapshot: entriesSnapshot,
     winner_wheel_entry_id: winner.wheel_entry_id,
     winner_display_name: winner.display_name
   });
 
   if (spinInsertError) {
-    await admin.rpc("release_spin_lock", { p_spin_id: spinId });
+    await admin.rpc("release_spin_lock", { p_wheel_id: wheelLookup.wheel.id, p_spin_id: spinId });
     return NextResponse.json({ error: "Failed to create spin" }, { status: 500 });
   }
 

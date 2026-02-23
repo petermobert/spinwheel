@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, requireAdmin } from "@/lib/supabaseServer";
+import { fetchWheelBySlug } from "@/lib/wheelsServer";
 import type { FilterMode } from "@/lib/types";
 
 function applyFilter(query: any, mode: FilterMode) {
@@ -21,6 +22,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
   }
 
+  const wheelSlug = (request.nextUrl.searchParams.get("wheel") || "").trim();
+  const wheelLookup = await fetchWheelBySlug(wheelSlug);
+  if ("error" in wheelLookup) {
+    return NextResponse.json({ error: wheelLookup.error }, { status: wheelLookup.status });
+  }
+
   const filterMode = (request.nextUrl.searchParams.get("filterMode") || "ALL") as FilterMode;
   const search = (request.nextUrl.searchParams.get("search") || "").trim();
 
@@ -29,8 +36,9 @@ export async function GET(request: NextRequest) {
   let query = admin
     .from("leads")
     .select(
-      "id,first_name,last_name,street,city,zip_code,phone_number,email_address,follow_up_requested,created_at,source,status,wheel_entry_id,used,used_timestamp,winner,winner_timestamp,spin_id,wheel_entries!leads_wheel_entry_fk(display_name)"
+      "id,wheel_id,first_name,last_name,street,city,zip_code,phone_number,email_address,follow_up_requested,created_at,source,status,wheel_entry_id,used,used_timestamp,winner,winner_timestamp,spin_id,wheel_entries!leads_wheel_entry_fk(display_name)"
     )
+    .eq("wheel_id", wheelLookup.wheel.id)
     .order("created_at", { ascending: false })
     .limit(1000);
 

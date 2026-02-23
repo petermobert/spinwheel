@@ -2,6 +2,7 @@ export type FilterMode = "ALL" | "ELIGIBLE" | "USED" | "WINNERS";
 
 export type LeadRow = {
   id: string;
+  wheel_id: string;
   first_name: string;
   last_name: string;
   street: string | null;
@@ -20,6 +21,14 @@ export type LeadRow = {
   winner_timestamp: string | null;
   spin_id: string | null;
   wheel_entries?: { display_name: string } | null;
+};
+
+export type WheelRow = {
+  id: string;
+  slug: string;
+  name: string;
+  created_at: string;
+  is_active: boolean;
 };
 
 export type WheelSnapshotEntry = {

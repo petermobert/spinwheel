@@ -115,14 +115,10 @@ export default function Wheel({ entries, spinPayload, onSpinAnimationDone }: Pro
 
     const deterministicTurns = Math.floor(hashToRange(spinPayload.spinId + "turns", 7, 11));
     const base = deterministicTurns * Math.PI * 2;
-    let target = base + (POINTER_ANGLE - (winnerCenter + jitter));
-
-    if (target <= rotation) {
-      const delta = rotation - target;
-      target += (Math.floor(delta / (Math.PI * 2)) + 1) * Math.PI * 2;
-    }
-
     const from = rotation;
+    const fromNormalized = ((from % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    const desiredAngle = POINTER_ANGLE - (winnerCenter + jitter);
+    const target = from + base + (desiredAngle - fromNormalized);
     const duration = Math.round(hashToRange(spinPayload.spinId + "dur", 4200, 6800));
     const start = performance.now();
 

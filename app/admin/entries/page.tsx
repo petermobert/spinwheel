@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseClient";
-import type { FilterMode, LeadRow } from "@/lib/types";
+import type { FilterMode, LeadRow, WheelRow } from "@/lib/types";
 
 const FILTERS: FilterMode[] = ["ALL", "ELIGIBLE", "USED", "WINNERS"];
 
@@ -14,6 +15,10 @@ export default function AdminEntriesPage() {
   const [filterMode, setFilterMode] = useState<FilterMode>("ALL");
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
+  const [wheels, setWheels] = useState<WheelRow[]>([]);
+  const searchParams = useSearchParams();
+  const initialWheel = useMemo(() => (searchParams.get("wheel") || "").trim(), [searchParams]);
+  const [wheelSlug, setWheelSlug] = useState(initialWheel);
 
   const refreshAuth = useCallback(async () => {
     const { data } = await supabaseBrowser.auth.getSession();
@@ -41,11 +46,12 @@ export default function AdminEntriesPage() {
   }, []);
 
   const fetchRows = useCallback(async () => {
-    if (!token || !isAdmin) return;
+    if (!token || !isAdmin || !wheelSlug) return;
 
     const params = new URLSearchParams();
     params.set("filterMode", filterMode);
     params.set("search", search);
+    params.set("wheel", wheelSlug);
 
     const res = await fetch(`/api/admin/entries?${params.toString()}`, {
       headers: { authorization: `Bearer ${token}` }
@@ -58,7 +64,23 @@ export default function AdminEntriesPage() {
     }
 
     setRows(payload.rows || []);
-  }, [filterMode, isAdmin, search, token]);
+  }, [filterMode, isAdmin, search, token, wheelSlug]);
+
+  const fetchWheels = useCallback(async () => {
+    if (!token || !isAdmin) return;
+
+    const res = await fetch("/api/admin/wheels", {
+      headers: { authorization: `Bearer ${token}` }
+    });
+
+    const payload = await res.json();
+    if (!res.ok) {
+      setError(payload.error || "Failed to load wheels");
+      return;
+    }
+
+    setWheels(payload.wheels || []);
+  }, [isAdmin, token]);
 
   useEffect(() => {
     refreshAuth();
@@ -74,6 +96,16 @@ export default function AdminEntriesPage() {
     return () => clearInterval(id);
   }, [fetchRows]);
 
+  useEffect(() => {
+    fetchWheels();
+  }, [fetchWheels]);
+
+  useEffect(() => {
+    if (!wheelSlug && wheels.length > 0) {
+      setWheelSlug(wheels[0].slug);
+    }
+  }, [wheelSlug, wheels]);
+
   const login = async () => {
     await supabaseBrowser.auth.signInWithOAuth({
       provider: "google",
@@ -84,12 +116,13 @@ export default function AdminEntriesPage() {
   };
 
   const exportFile = async (format: "csv" | "xlsx") => {
-    if (!token) return;
+    if (!token || !wheelSlug) return;
 
     const params = new URLSearchParams();
     params.set("format", format);
     params.set("filterMode", filterMode);
     params.set("search", search);
+    params.set("wheel", wheelSlug);
 
     const res = await fetch(`/api/export?${params.toString()}`, {
       headers: { authorization: `Bearer ${token}` }
@@ -105,7 +138,7 @@ export default function AdminEntriesPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `sparkle-leads-${filterMode.toLowerCase()}.${format}`;
+    a.download = `sparkle-leads-${wheelSlug}-${filterMode.toLowerCase()}.${format}`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -131,6 +164,15 @@ export default function AdminEntriesPage() {
       <h1 style={{ marginTop: 0 }}>Entries</h1>
 
       <div className="row" style={{ marginBottom: 10 }}>
+        <div style={{ width: 220 }}>
+          <select value={wheelSlug} onChange={(e) => setWheelSlug(e.target.value)}>
+            {wheels.map((wheel) => (
+              <option key={wheel.id} value={wheel.slug}>
+                {wheel.name} ({wheel.slug})
+              </option>
+            ))}
+          </select>
+        </div>
         {FILTERS.map((mode) => (
           <button
             key={mode}
@@ -141,12 +183,16 @@ export default function AdminEntriesPage() {
           </button>
         ))}
         <div style={{ width: 280 }}>
-          <input placeholder="Search name, phone, email, zip, city" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input
+            placeholder="Search name, phone, email, zip, city"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
-        <button className="secondary" onClick={() => exportFile("csv")}>
+        <button className="secondary" onClick={() => exportFile("csv")} disabled={!wheelSlug}>
           Export CSV
         </button>
-        <button className="secondary" onClick={() => exportFile("xlsx")}>
+        <button className="secondary" onClick={() => exportFile("xlsx")} disabled={!wheelSlug}>
           Export XLSX
         </button>
       </div>

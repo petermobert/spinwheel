@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { createServiceClient, requireAdmin } from "@/lib/supabaseServer";
+import { fetchWheelBySlug } from "@/lib/wheelsServer";
 import type { FilterMode, LeadRow } from "@/lib/types";
 
 function applyFilter(query: any, mode: FilterMode) {
@@ -72,14 +73,15 @@ function rowsToCsv(rows: LeadRow[]) {
   return [headers.join(","), ...lines].join("\n");
 }
 
-async function fetchRows(filterMode: FilterMode, search: string) {
+async function fetchRows(filterMode: FilterMode, search: string, wheelId: string) {
   const admin = createServiceClient();
 
   let query = admin
     .from("leads")
     .select(
-      "id,first_name,last_name,street,city,zip_code,phone_number,email_address,follow_up_requested,created_at,source,status,wheel_entry_id,used,used_timestamp,winner,winner_timestamp,spin_id"
+      "id,wheel_id,first_name,last_name,street,city,zip_code,phone_number,email_address,follow_up_requested,created_at,source,status,wheel_entry_id,used,used_timestamp,winner,winner_timestamp,spin_id"
     )
+    .eq("wheel_id", wheelId)
     .order("created_at", { ascending: false })
     .limit(10000);
 
@@ -105,12 +107,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status });
   }
 
+  const wheelSlug = (request.nextUrl.searchParams.get("wheel") || "").trim();
+  const wheelLookup = await fetchWheelBySlug(wheelSlug);
+  if ("error" in wheelLookup) {
+    return NextResponse.json({ error: wheelLookup.error }, { status: wheelLookup.status });
+  }
+
   const format = (request.nextUrl.searchParams.get("format") || "csv") as "csv" | "xlsx";
   const filterMode = (request.nextUrl.searchParams.get("filterMode") || "ALL") as FilterMode;
   const search = (request.nextUrl.searchParams.get("search") || "").trim();
 
   try {
-    const rows = await fetchRows(filterMode, search);
+    const rows = await fetchRows(filterMode, search, wheelLookup.wheel.id);
 
     if (format === "xlsx") {
       const workbook = new ExcelJS.Workbook();
@@ -143,7 +151,7 @@ export async function GET(request: NextRequest) {
         status: 200,
         headers: {
           "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          "content-disposition": `attachment; filename="sparkle-leads-${filterMode.toLowerCase()}.xlsx"`
+          "content-disposition": `attachment; filename="sparkle-leads-${wheelLookup.wheel.slug}-${filterMode.toLowerCase()}.xlsx"`
         }
       });
     }
@@ -153,7 +161,7 @@ export async function GET(request: NextRequest) {
       status: 200,
       headers: {
         "content-type": "text/csv; charset=utf-8",
-        "content-disposition": `attachment; filename="sparkle-leads-${filterMode.toLowerCase()}.csv"`
+        "content-disposition": `attachment; filename="sparkle-leads-${wheelLookup.wheel.slug}-${filterMode.toLowerCase()}.csv"`
       }
     });
   } catch {
