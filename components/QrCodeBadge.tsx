@@ -50,7 +50,11 @@ export default function QrCodeBadge({ targetUrl }: Props) {
         <div style={{ width: 280, height: 280, background: "#f1f1f1" }} />
       )}
       <div style={{ fontSize: 12, color: "#4b4b4b" }}>Scan Me To Enter</div>
-    
+      {href ? (
+        <div style={{ fontSize: 10, color: "#f1f1f1", maxWidth: 200, textAlign: "center", wordBreak: "break-all" }}>
+          {href}
+        </div>
+      ) : null}
     </div>
   );
 }
