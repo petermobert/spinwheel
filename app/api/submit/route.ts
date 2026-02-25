@@ -6,10 +6,10 @@ function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function isValidZip(zip: string) {
-  const digits = zip.replace(/\D/g, "");
-  return digits.length === 5 || digits.length === 9;
-}
+// function isValidZip(zip: string) {
+//   const digits = zip.replace(/\D/g, "");
+//   return digits.length === 5 || digits.length === 9;
+// }
 
 function isValidPhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
