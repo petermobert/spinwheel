@@ -71,16 +71,17 @@ export async function POST(request: NextRequest) {
     const followUpRaw = String(body.followUpRequested || "").toLowerCase();
     const followUpRequested = followUpRaw === "yes";
 
-    if (!firstName || !lastName || !zipCode || !phoneNumber || !emailAddress) {
+    // if (!firstName || !lastName || !zipCode || !phoneNumber || !emailAddress) {
+      if (!firstName || !lastName || !inputCity || !phoneNumber || !emailAddress) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
     if (followUpRaw !== "yes" && followUpRaw !== "no") {
       return NextResponse.json({ error: "Follow-up selection is required" }, { status: 400 });
     }
 
-    if (!isValidZip(zipCode)) {
-      return NextResponse.json({ error: "Invalid zip code" }, { status: 400 });
-    }
+    // if (!isValidZip(zipCode)) {
+    //   return NextResponse.json({ error: "Invalid zip code" }, { status: 400 });
+    // }
 
     if (!isValidPhone(phoneNumber)) {
       return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });

@@ -131,24 +131,24 @@ export default function PublicFormPage() {
           </div>
         </div>
 
-        <div style={{ marginTop: 10 }}>
+        {/* <div style={{ marginTop: 10 }}>
           <label>Street</label>
           <input value={form.street} onChange={(e) => setForm((s) => ({ ...s, street: e.target.value }))} />
-        </div>
+        </div> */}
 
         <div className="row" style={{ marginTop: 10 }}>
           <div style={{ flex: 1 }}>
-            <label>City</label>
+            <label>Company*</label>
             <input value={form.city} onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))} />
           </div>
-          <div style={{ flex: 1 }}>
+          {/* <div style={{ flex: 1 }}>
             <label>Zip Code*</label>
             <input
               value={form.zipCode}
               required
               onChange={(e) => setForm((s) => ({ ...s, zipCode: e.target.value }))}
             />
-          </div>
+          </div> */}
         </div>
 
         <div className="row" style={{ marginTop: 10 }}>
@@ -172,7 +172,7 @@ export default function PublicFormPage() {
         </div>
 
         <div style={{ marginTop: 10 }}>
-          <label>Would you like a follow up to book with the promotional discount?*</label>
+          <label>Would you like a follow up call to discuss our commercial services?*</label>
           <select
             value={form.followUpRequested}
             onChange={(e) => setForm((s) => ({ ...s, followUpRequested: e.target.value as "yes" | "no" }))}

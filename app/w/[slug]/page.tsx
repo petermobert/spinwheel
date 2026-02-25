@@ -221,11 +221,11 @@ export default function AdminWheelPage() {
           <h3 style={{ marginTop: 0, marginBottom: 8 }}>
             {wheelMeta?.name || "Wheel"} Entries: {entries.length}
           </h3>
-          {/* <p style={{ color: "#6c6c6c", marginTop: -4 }}>Slug: {wheelSlug}</p> */}
+    
           <table>
             <thead>
               <tr>
-                <th>Name (City)</th>
+                <th>Name (Company)</th>
               </tr>
             </thead>
             <tbody>
