@@ -11,7 +11,7 @@ type EligibleRow = {
   id: string;
   city: string | null;
   wheel_entry_id: string | null;
-  wheel_entries: { display_name: string }[] | null;
+  wheel_entries: { display_name: string }[] | { display_name: string } | null;
 };
 
 export async function GET(request: NextRequest) {
@@ -44,11 +44,14 @@ export async function GET(request: NextRequest) {
     .maybeSingle();
   const lockHeld = !!lockRow && new Date(lockRow.expires_at).getTime() > Date.now();
 
-  const entries = ((rows || []) as EligibleRow[]).map((r) => ({
-    wheel_entry_id: r.wheel_entry_id as string,
-    display_name: withCity(r.wheel_entries?.[0]?.display_name || "Entry", r.city || null),
-    lead_id: r.id
-  }));
+  const entries = ((rows || []) as EligibleRow[]).map((r) => {
+    const entry = Array.isArray(r.wheel_entries) ? r.wheel_entries[0] : r.wheel_entries;
+    return {
+      wheel_entry_id: r.wheel_entry_id as string,
+      display_name: withCity(entry?.display_name || "Entry", r.city || null),
+      lead_id: r.id
+    };
+  });
 
   return NextResponse.json({ entries, lockHeld });
 }

@@ -12,7 +12,7 @@ type EligibleRow = {
   id: string;
   city: string | null;
   wheel_entry_id: string | null;
-  wheel_entries: { display_name: string }[] | null;
+  wheel_entries: { display_name: string }[] | { display_name: string } | null;
 };
 
 export async function POST(request: NextRequest) {
@@ -57,11 +57,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch eligible entries" }, { status: 500 });
   }
 
-  const entriesSnapshot = ((eligibleRows || []) as EligibleRow[]).map((r) => ({
-    wheel_entry_id: r.wheel_entry_id as string,
-    display_name: withCity(r.wheel_entries?.[0]?.display_name || "Entry", r.city || null),
-    lead_id: r.id
-  }));
+  const entriesSnapshot = ((eligibleRows || []) as EligibleRow[]).map((r) => {
+    const entry = Array.isArray(r.wheel_entries) ? r.wheel_entries[0] : r.wheel_entries;
+    return {
+      wheel_entry_id: r.wheel_entry_id as string,
+      display_name: withCity(entry?.display_name || "Entry", r.city || null),
+      lead_id: r.id
+    };
+  });
 
   if (entriesSnapshot.length === 0) {
     await admin.rpc("release_spin_lock", { p_wheel_id: wheelLookup.wheel.id, p_spin_id: spinId });
